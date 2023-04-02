@@ -67,7 +67,14 @@ object CRSBoundsProvider {
       */
     def apply(geometryAPI: GeometryAPI): CRSBoundsProvider = {
         val stream: InputStream = getClass.getResourceAsStream("/CRSBounds.csv")
-        val lines: List[String] = scala.io.Source.fromInputStream(stream).getLines.toList.drop(1)
+        var lines: List[String] = List()
+        try {
+            lines = scala.io.Source.fromInputStream(stream).getLines.toList.drop(1)
+        } catch {
+            case e: Any => 
+            println("Caught exception in CRSBoundsProvider; Attempting to re-read the stream")
+            lines = scala.io.Source.fromInputStream(stream).getLines.toList.drop(1)
+        }
         val lookupItems = lines
             .drop(1)
             .map(line => {
