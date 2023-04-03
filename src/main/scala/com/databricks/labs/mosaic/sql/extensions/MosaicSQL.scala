@@ -2,7 +2,7 @@ package com.databricks.labs.mosaic.sql.extensions
 
 import com.databricks.labs.mosaic._
 import com.databricks.labs.mosaic.core.geometry.api.{ESRI, JTS}
-import com.databricks.labs.mosaic.core.index.{BNGIndexSystem, H3IndexSystem}
+import com.databricks.labs.mosaic.core.index.{BNGIndexSystem, H3IndexSystem, IndexSystemFactory}
 import com.databricks.labs.mosaic.core.raster.api.RasterAPI.GDAL
 import com.databricks.labs.mosaic.functions.MosaicContext
 import org.apache.spark.internal.Logging
@@ -27,11 +27,20 @@ class MosaicSQL extends (SparkSessionExtensions => Unit) with Logging {
       */
     override def apply(ext: SparkSessionExtensions): Unit = {
         ext.injectCheckRule(spark => {
-            val indexSystem = spark.conf.get(MOSAIC_INDEX_SYSTEM)
+            var indexSystem: String = spark.conf.get(MOSAIC_INDEX_SYSTEM)
+
+            // If custom, build using indexFactory
+            if(indexSystem.length > 5 && indexSystem.substring(0, 6) == "CUSTOM"){
+                val CustomIndexSystem = IndexSystemFactory.getIndexSystem(indexSystem)
+                indexSystem = "CUSTOM"
+            }
+
             val geometryAPI = spark.conf.get(MOSAIC_GEOMETRY_API)
             // val rasterAPI = spark.conf.get(MOSAIC_RASTER_API)
             val rasterAPI = "GDAL"
             val mosaicContext = (indexSystem, geometryAPI, rasterAPI) match {
+                case ("CUSTOM", "JTS", "GDAL") => MosaicContext.build(CustomIndexSystem, JTS, GDAL)
+                case ("CUSTOM", "ESRI", "GDAL") => MosaicContext.build(CustomIndexSystem, ESRI, GDAL)
                 case ("H3", "JTS", "GDAL")   => MosaicContext.build(H3IndexSystem, JTS, GDAL)
                 case ("H3", "ESRI", "GDAL")  => MosaicContext.build(H3IndexSystem, ESRI, GDAL)
                 case ("BNG", "JTS", "GDAL")  => MosaicContext.build(BNGIndexSystem, JTS, GDAL)
