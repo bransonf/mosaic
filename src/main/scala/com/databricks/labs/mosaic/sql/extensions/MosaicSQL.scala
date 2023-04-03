@@ -28,10 +28,11 @@ class MosaicSQL extends (SparkSessionExtensions => Unit) with Logging {
     override def apply(ext: SparkSessionExtensions): Unit = {
         ext.injectCheckRule(spark => {
             var indexSystem: String = spark.conf.get(MOSAIC_INDEX_SYSTEM)
+            var CustomIndexSystem = IndexSystemFactory.getIndexSystem("CUSTOM(-180,180,-90,90,2,30,30)") // Placeholder to register var
 
             // If custom, build using indexFactory
             if(indexSystem.length > 5 && indexSystem.substring(0, 6) == "CUSTOM"){
-                val CustomIndexSystem = IndexSystemFactory.getIndexSystem(indexSystem)
+                CustomIndexSystem = IndexSystemFactory.getIndexSystem(indexSystem)
                 indexSystem = "CUSTOM"
             }
 
